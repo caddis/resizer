@@ -1,8 +1,8 @@
 <?php if (! defined('BASEPATH')) exit('No direct script access allowed');
 
-$plugin_info = array (
+$plugin_info = array(
 	'pi_name' => 'Resizer',
-	'pi_version' => '1.0.0',
+	'pi_version' => '1.0.1',
 	'pi_author' => 'Caddis',
 	'pi_author_url' => 'http://www.caddis.co',
 	'pi_description' => 'Resize, cache, and retrieve images',
@@ -14,7 +14,7 @@ class Resizer {
 	public $defaults = array(
 		'alt' => '',
 		'background' => false,
-		'crop' => true,
+		'crop' => false,
 		'fallback' => false,
 		'filename' => false,
 		'height' => false,
@@ -328,35 +328,19 @@ class Resizer {
 
 				if ($type == 2)
 				{
-					imagealphablending($tmp_image, false);
+					$color = ($params['background'] !== false) ? $params['background'] : 'ffffff';
+
+					$rgb = $this->_convert_hex($color);
+
+					$background = imagecolorallocate($new, $rgb['r'], $rgb['g'], $rgb['b']);
+
+					imagefill($new, 0, 0, $background);
 				}
-				else if ($type == 3)
-				{
-					imagealphablending($new, false);
-				}
-
-				imagecopyresampled($new, $tmp_image, $target_x, $target_y, $orig_x, $orig_y, $target_width, $target_height, $orig_width, $orig_height);
-
-				// Sharpen image
-
-				if ($params['sharpen'])
-				{
-					$sharpen = array(
-						array(0, -1, 0),
-						array(-1, 12, -1),
-						array(0, -1, 0)
-					);
-
-					$divisor = array_sum(array_map('array_sum', $sharpen));
-
-					imageconvolution($new, $sharpen, $divisor, 0);
-				}
-
-				if ($type != 2)
+				else
 				{
 					// Set image background
 
-					if ($params['force_jpg'] === true and ! $params['background'])
+					if ($params['force_jpg'] === true and $params['background'] === false)
 					{
 						$params['background'] = 'ffffff';
 					}
@@ -364,25 +348,54 @@ class Resizer {
 					if ($params['background'])
 					{
 						$rgb = $this->_convert_hex($params['background']);
+
 						imagefilter($new, IMG_FILTER_COLORIZE, $rgb['r'], $rgb['g'], $rgb['b']);
 					}
+					else if ($params['force_jpg'] !== true)
+					{
+						$transparent = imagecolortransparent($new, imagecolorallocatealpha($new, 0, 0, 0, 127));
 
+						if ($type == 3)
+						{
+							imagealphablending($new, false);
+							imagesavealpha($new, true);
+						}
+
+						imagefill($new, 0, 0, $transparent);
+					}
+				}
+
+				imagecopyresampled($new, $tmp_image, $target_x, $target_y, $orig_x, $orig_y, $target_width, $target_height, $orig_width, $orig_height);
+
+				// Sharpen image
+
+				if ($type == 2 or $params['force_jpg'] === true)
+				{
+					if ($params['sharpen'])
+					{
+						$sharpen = array(
+							array(0, -1, 0),
+							array(-1, 12, -1),
+							array(0, -1, 0)
+						);
+
+						$divisor = array_sum(array_map('array_sum', $sharpen));
+
+						imageconvolution($new, $sharpen, $divisor, 0);
+					}
+
+					imagejpeg($new, $new_path, $params['quality']);
+				}
+				else
+				{
 					if ($type == 1)
 					{
-						$transparencyIndex = imagecolortransparent($tmp_image);
-						imagecolortransparent($new, $transparencyIndex);
 						imagegif($new, $new_path);
 					}
 					else
 					{
-						imagesavealpha($new, true);
 						imagepng($new, $new_path, 9);
 					}
-				}
-
-				if ($type == 2 or $params['force_jpg'] === true)
-				{
-					imagejpeg($new, $new_path, $params['quality']);
 				}
 
 				// Remove temporary images
@@ -437,16 +450,17 @@ responsive = 'no'         // Skip the width and height parameters for responsive
 quality = 80              // Image compression quality 0-100 with 100 being no compression (defaults to config value else 80)
 scale_up = 'yes'          // Scale image larger than original if set width and/or height dictate (defaults to yes)
 xhtml = 'no'              // Self close image tag (defaults to HTML5 style, set to yes for XHTML)
-sharpen = 'yes'           // Slightly sharpen images, useful after resizing (defaults to yes)
+sharpen = 'yes'           // Slightly sharpen jpg images, useful after resizing (defaults to yes)
 target = '/images/sized/' // Writeable cache directory relative to root (defaults to config value else '/images/sized/')
+host = 'http://cdn.com'   // Domain to prefix to the filepath
 
 Usage:
 
 {exp:resizer:path src="/assets/img/hero.jpg" width="100" height="100" crop="yes"}
 /images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg
 
-{exp:resizer:tag src="/assets/img/hero.jpg" width="100" height="100" alt="Testing" crop="yes"}
-<img src="/images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" width="100" height="100" alt="Testing">
+{exp:resizer:tag src="/assets/img/hero.jpg" host="http://cdn.domain.com" width="100" height="100" responsive="yes" alt="Testing" crop="yes"}
+<img src="http://cdn.domain.com/images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" alt="Testing">
 
 {exp:resizer:pair src="/assets/img/hero.jpg" width="100" height="100" crop="yes"}
 <img src="{resizer:path}" width="{resizer:width}" height="{resizer:height}" alt="Testing">
