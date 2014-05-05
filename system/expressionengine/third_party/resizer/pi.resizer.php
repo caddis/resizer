@@ -2,7 +2,7 @@
 
 $plugin_info = array(
 	'pi_name' => 'Resizer',
-	'pi_version' => '1.0.1',
+	'pi_version' => '1.1.0',
 	'pi_author' => 'Caddis',
 	'pi_author_url' => 'http://www.caddis.co',
 	'pi_description' => 'Resize, cache, and retrieve images',
@@ -33,8 +33,7 @@ class Resizer {
 
 	public function __construct()
 	{
-		foreach ($this->defaults as $key => $val)
-		{
+		foreach ($this->defaults as $key => $val) {
 			$param = ee()->TMPL->fetch_param($key);
 
 			$this->_settings[$key] = ($param !== false) ? (($param == 'yes') ? true : $param) : $this->defaults[$key];
@@ -44,46 +43,39 @@ class Resizer {
 		$this->_settings['target'] = $this->_settings['root'] . $this->_settings['target'];
 
 		// PHP memory limit
-		if (ee()->config->item('resizer_memory_limit') !== false)
-		{
+		if (ee()->config->item('resizer_memory_limit') !== false) {
 			ini_set('memory_limit', ee()->config->item('resizer_memory_limit') . 'M');
 		}
 
 		// Image quality
-		if ($this->_settings['quality'] === false)
-		{
+		if ($this->_settings['quality'] === false) {
 			$this->_settings['quality'] = (ee()->config->item('resizer_quality') !== false) ? ee()->config->item('resizer_quality') : 80;
 		}
 
 		// Responsive
-		if ($this->_settings['responsive'] === false)
-		{
+		if ($this->_settings['responsive'] === false) {
 			$this->_settings['responsive'] = ee()->config->item('resizer_responsive');
 		}
 
 		// Self close
-		if ($this->_settings['xhtml'] === false)
-		{
+		if ($this->_settings['xhtml'] === false) {
 			$this->_settings['xhtml'] = ee()->config->item('resizer_xhtml');
 		}
 
 		// Sharpen
-		if ($this->_settings['sharpen'] === false)
-		{
+		if ($this->_settings['sharpen'] === false) {
 			$this->_settings['sharpen'] = ee()->config->item('resizer_sharpen');
 		}
 
 		// Target
-		if (ee()->TMPL->fetch_param('target') === false)
-		{
+		if (ee()->TMPL->fetch_param('target') === false) {
 			$this->_settings['target'] = $this->_settings['root'] . ((ee()->config->item('resizer_target') !== false) ? ee()->config->item('resizer_target') : $this->defaults['target']);
 		}
 
 		// Image source
 		$src = ee()->TMPL->fetch_param('src');
 
-		if ($src === false)
-		{
+		if ($src === false) {
 			return '';
 		}
 
@@ -93,8 +85,7 @@ class Resizer {
 
 	public function path()
 	{
-		if ($this->image)
-		{
+		if ($this->image) {
 			return $this->_settings['host'] . $this->image['path'];
 		}
 
@@ -103,29 +94,36 @@ class Resizer {
 
 	public function tag()
 	{
-		$tag = '';
+		if ($this->image) {
+			$tag = '<img src="' . $this->_settings['host'] . $this->image['path'] . '"';
 
-		if ($this->image)
-		{
-			$tag .= '<img src="' . $this->_settings['host'] . $this->image['path'] . '"';
-
-			if ($this->_settings['responsive'] !== true)
-			{
+			if ($this->_settings['responsive'] !== true) {
 				$tag .= ' width="' . $this->image['width'] . '" height="' . $this->image['height'] . '"';
 			}
 
-			$tag .= ' alt="' . $this->_settings['alt'] . '"' . (($this->_settings['xhtml'] === true) ? ' />' : '>');
+			$tag .= ' alt="' . $this->_settings['alt'] . '"';
+
+			$params = ee()->TMPL->tagparams;
+
+			foreach ($params as $key => $value) {
+				if (substr($key, 0, 5) == 'attr:') {
+					$tag .= ' ' . substr($key, 5) . '="' . $value . '"';
+				}
+			}
+
+			$tag .= (($this->_settings['xhtml'] === true) ? ' />' : '>');
+
+			return $tag;
 		}
 
-		return $tag;
+		return '';
 	}
 
 	public function pair()
 	{
 		$tagdata = ee()->TMPL->tagdata;
 
-		if ($this->image)
-		{
+		if ($this->image) {
 			$variables = array(
 				'resizer:path' => $this->_settings['host'] . $this->image['path'],
 				'resizer:width' => $this->image['width'],
@@ -147,19 +145,14 @@ class Resizer {
 
 		// Check for image, display fallback if necessary
 		
-		if (! file_exists($path))
-		{
-			if ($params['fallback'])
-			{
+		if (! file_exists($path)) {
+			if ($params['fallback']) {
 				$path = $params['root'] . $params['fallback'];
 				
-				if (! file_exists($path))
-				{
+				if (! file_exists($path)) {
 					return false;
 				}
-			}
-			else
-			{
+			} else {
 				return false;
 			}
 		}
@@ -169,21 +162,18 @@ class Resizer {
 
 		$data = getimagesize($path);
 
-		if (! isset($data) or ! is_array($data))
-		{
+		if (! isset($data) or ! is_array($data)) {
 			return false;
 		}
 
 		$type = $data[2];
 		$ext = image_type_to_extension($type);
 
-		if (! in_array($ext, $allowed))
-		{
+		if (! in_array($ext, $allowed)) {
 			return false;
 		}
 
-		if ($ext === '.jpeg' or $params['force_jpg'] === true)
-		{
+		if ($ext === '.jpeg' or $params['force_jpg'] === true) {
 			$ext = '.jpg';
 		}
 
@@ -192,12 +182,9 @@ class Resizer {
 
 		// General filename
 
-		if ($params['filename'])
-		{
+		if ($params['filename']) {
 			$new_path = $target . $params['filename'] . $ext;
-		}
-		else
-		{
+		} else {
 			unset($params['alt']);
 			unset($params['fallback']);
 			unset($params['self_close']);
@@ -214,25 +201,17 @@ class Resizer {
 		$width = $params['width'];
 		$height = $params['height'];
 
-		if (! $width and ! $height)
-		{
+		if (! $width and ! $height) {
 			$width = $target_width = $orig_width;
 			$height = $target_height = $orig_height;
-		}
-		else
-		{
-			if ($width and $height)
-			{
+		} else {
+			if ($width and $height) {
 				$target_width = ($width < $orig_width) ? $width : (($params['scale_up'] === true) ? $width : $orig_width);
 				$target_height = ($height < $orig_height) ? $height : (($params['scale_up'] === true) ? $height : $orig_height);
-			}
-			else if ($width)
-			{
+			} else if ($width) {
 				$target_width = ($width < $orig_width) ? $width : (($params['scale_up'] === true) ? $width : $orig_width);
 				$target_height = floor($target_width / $orig_ratio);
-			}
-			else if ($height)
-			{
+			} else if ($height) {
 				$target_height = ($height < $orig_height) ? $height : (($params['scale_up'] === true) ? $height : $orig_height);
 				$target_width = floor($target_height * $orig_ratio);
 			}
@@ -244,58 +223,45 @@ class Resizer {
 
 		// Determine if image generation is needed
 
-		if (file_exists($new_path))
-		{
+		if (file_exists($new_path)) {
 			$create = false;
 
 			$orig_time = date('YmdHis', filemtime($path));
 			$new_time = date('YmdHis', filemtime($new_path));
 
-			if ($new_time < $orig_time)
-			{
+			if ($new_time < $orig_time) {
 				$create = true;
 			}
 		}
 
 		// Create image if required
 
-		if ($create)
-		{
+		if ($create) {
 			$tmp_image = false;
 
-			if ($type == 1)
-			{
+			if ($type == 1) {
 				$tmp_image = imagecreatefromgif($path);
-			}
-			else if ($type == 2)
-			{
+			} else if ($type == 2) {
 				$tmp_image = imagecreatefromjpeg($path);
-			}
-			else if ($type == 3)
-			{
+			} else if ($type == 3) {
 				$tmp_image = imagecreatefrompng($path);
 			}
 
 			$orig_x = $orig_y = $target_x = $target_y = 0;
 
-			if ($tmp_image)
-			{
+			if ($tmp_image) {
 				$new = imagecreatetruecolor($target_width, $target_height);
 
 				$orig_ratio = $orig_width / $orig_height;
 				$target_ratio = $target_width / $target_height;
 
-				if ($params['crop'] === true and $width !== false and $height  !== false)
-				{
-					if ($orig_ratio > $target_ratio)
-					{
+				if ($params['crop'] === true and $width !== false and $height  !== false) {
+					if ($orig_ratio > $target_ratio) {
 						$temp_width = $orig_height * $target_ratio;
 						$temp_height = $orig_height;
 
 						$orig_x = ($orig_width - $temp_width) / 2;
-					}
-					else
-					{
+					} else {
 						$temp_width = $orig_width;
 						$temp_height = $orig_width / $target_ratio;
 
@@ -304,18 +270,13 @@ class Resizer {
 
 					$orig_width = $temp_width;
 					$orig_height = $temp_height;
-				}
-				else
-				{
-					if ($orig_ratio < $target_ratio)
-					{
+				} else {
+					if ($orig_ratio < $target_ratio) {
 						$temp_width = $target_height * $orig_ratio;
 						$temp_height = $target_height;
 
 						$target_x = ($target_width - $temp_width) / 2;
-					}
-					else
-					{
+					} else {
 						$temp_width = $target_width;
 						$temp_height = $target_width / $orig_ratio;
 
@@ -326,8 +287,7 @@ class Resizer {
 					$target_height = $temp_height;
 				}
 
-				if ($type == 2)
-				{
+				if ($type == 2) {
 					$color = ($params['background'] !== false) ? $params['background'] : 'ffffff';
 
 					$rgb = $this->_convert_hex($color);
@@ -335,28 +295,21 @@ class Resizer {
 					$background = imagecolorallocate($new, $rgb['r'], $rgb['g'], $rgb['b']);
 
 					imagefill($new, 0, 0, $background);
-				}
-				else
-				{
+				} else {
 					// Set image background
 
-					if ($params['force_jpg'] === true and $params['background'] === false)
-					{
+					if ($params['force_jpg'] === true and $params['background'] === false) {
 						$params['background'] = 'ffffff';
 					}
 
-					if ($params['background'])
-					{
+					if ($params['background']) {
 						$rgb = $this->_convert_hex($params['background']);
 
 						imagefilter($new, IMG_FILTER_COLORIZE, $rgb['r'], $rgb['g'], $rgb['b']);
-					}
-					else if ($params['force_jpg'] !== true)
-					{
+					} else if ($params['force_jpg'] !== true) {
 						$transparent = imagecolortransparent($new, imagecolorallocatealpha($new, 0, 0, 0, 127));
 
-						if ($type == 3)
-						{
+						if ($type == 3) {
 							imagealphablending($new, false);
 							imagesavealpha($new, true);
 						}
@@ -369,10 +322,8 @@ class Resizer {
 
 				// Sharpen image
 
-				if ($type == 2 or $params['force_jpg'] === true)
-				{
-					if ($params['sharpen'])
-					{
+				if ($type == 2 or $params['force_jpg'] === true) {
+					if ($params['sharpen']) {
 						$sharpen = array(
 							array(0, -1, 0),
 							array(-1, 12, -1),
@@ -385,15 +336,10 @@ class Resizer {
 					}
 
 					imagejpeg($new, $new_path, $params['quality']);
-				}
-				else
-				{
-					if ($type == 1)
-					{
+				} else {
+					if ($type == 1) {
 						imagegif($new, $new_path);
-					}
-					else
-					{
+					} else {
 						imagepng($new, $new_path, 9);
 					}
 				}
@@ -402,9 +348,7 @@ class Resizer {
 
 				imagedestroy($new);
 				imagedestroy($tmp_image);
-			}
-			else
-			{
+			} else {
 				return false;
 			}
 		}
@@ -422,8 +366,7 @@ class Resizer {
 
 	private function _convert_hex($hex)
 	{
-		if (strlen($hex) == 6)
-		{
+		if (strlen($hex) == 6) {
 			list($r, $g, $b) = array($hex[0] . $hex[1], $hex[2] . $hex[3], $hex[4] . $hex[5]);
 
 			return array('r' => hexdec($r), 'g' => hexdec($g), 'b' => hexdec($b));
@@ -453,14 +396,15 @@ xhtml = 'no'              // Self close image tag (defaults to HTML5 style, set 
 sharpen = 'yes'           // Slightly sharpen jpg images, useful after resizing (defaults to yes)
 target = '/images/sized/' // Writeable cache directory relative to root (defaults to config value else '/images/sized/')
 host = 'http://cdn.com'   // Domain to prefix to the filepath
+attr:class = 'img-left'   // Any attributes prepended by "attr:" will be added to the single tag output
 
 Usage:
 
 {exp:resizer:path src="/assets/img/hero.jpg" width="100" height="100" crop="yes"}
 /images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg
 
-{exp:resizer:tag src="/assets/img/hero.jpg" host="http://cdn.domain.com" width="100" height="100" responsive="yes" alt="Testing" crop="yes"}
-<img src="http://cdn.domain.com/images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" alt="Testing">
+{exp:resizer:tag src="/assets/img/hero.jpg" host="http://cdn.domain.com" width="100" height="100" responsive="yes" alt="Testing" crop="yes" attr:class="img-left"}
+<img src="http://cdn.domain.com/images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" alt="Testing" class="img-left">
 
 {exp:resizer:pair src="/assets/img/hero.jpg" width="100" height="100" crop="yes"}
 <img src="{resizer:path}" width="{resizer:width}" height="{resizer:height}" alt="Testing">

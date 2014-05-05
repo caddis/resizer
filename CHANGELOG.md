@@ -1,3 +1,9 @@
+# 1.1.0
+
+2014-05-05
+
+- Added ability to add additional attributes using "attr:"
+
 # 1.0.1
 
 2014-04-09
