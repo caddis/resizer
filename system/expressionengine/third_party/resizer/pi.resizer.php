@@ -2,7 +2,7 @@
 
 $plugin_info = array(
 	'pi_name' => 'Resizer',
-	'pi_version' => '1.1.0',
+	'pi_version' => '1.1.1',
 	'pi_author' => 'Caddis',
 	'pi_author_url' => 'http://www.caddis.co',
 	'pi_description' => 'Resize, cache, and retrieve images',
@@ -144,11 +144,10 @@ class Resizer {
 		$path = $params['root'] . $src;
 
 		// Check for image, display fallback if necessary
-		
-		if (! file_exists($path)) {
+		if (! is_file($path) or ! file_exists($path)) {
 			if ($params['fallback']) {
 				$path = $params['root'] . $params['fallback'];
-				
+
 				if (! file_exists($path)) {
 					return false;
 				}
@@ -181,7 +180,6 @@ class Resizer {
 		$orig_height = $data[1];
 
 		// General filename
-
 		if ($params['filename']) {
 			$new_path = $target . $params['filename'] . $ext;
 		} else {
@@ -195,7 +193,6 @@ class Resizer {
 		}
 
 		// Calculate target width and height
-
 		$orig_ratio = ($orig_width / $orig_height);
 
 		$width = $params['width'];
@@ -222,7 +219,6 @@ class Resizer {
 		$create = true;
 
 		// Determine if image generation is needed
-
 		if (file_exists($new_path)) {
 			$create = false;
 
@@ -235,7 +231,6 @@ class Resizer {
 		}
 
 		// Create image if required
-
 		if ($create) {
 			$tmp_image = false;
 
@@ -297,7 +292,6 @@ class Resizer {
 					imagefill($new, 0, 0, $background);
 				} else {
 					// Set image background
-
 					if ($params['force_jpg'] === true and $params['background'] === false) {
 						$params['background'] = 'ffffff';
 					}
@@ -321,7 +315,6 @@ class Resizer {
 				imagecopyresampled($new, $tmp_image, $target_x, $target_y, $orig_x, $orig_y, $target_width, $target_height, $orig_width, $orig_height);
 
 				// Sharpen image
-
 				if ($type == 2 or $params['force_jpg'] === true) {
 					if ($params['sharpen']) {
 						$sharpen = array(
@@ -345,7 +338,6 @@ class Resizer {
 				}
 
 				// Remove temporary images
-
 				imagedestroy($new);
 				imagedestroy($tmp_image);
 			} else {
@@ -354,7 +346,6 @@ class Resizer {
 		}
 
 		// Return relative path
-
 		$image = str_replace($params['root'], '', $new_path);
 
 		return array(

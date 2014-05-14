@@ -1,3 +1,9 @@
+# 1.1.1
+
+2014-05-13
+
+- Make sure path references a file and not a directory
+
 # 1.1.0
 
 2014-05-05
