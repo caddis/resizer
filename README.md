@@ -17,7 +17,7 @@ $config['resizer_target'] = '/images/sized/'; // Default cache directory relativ
 
 ## Parameters
 
-	crop='yes'              // Crop image (defaults to yes)
+	crop='yes'              // Crop image (defaults to no)
 	height=''               // Optional height of rendered image
 	width=''                // Optional width of rendered image
 	filename=''             // Override image filename (defaults to source filename)
