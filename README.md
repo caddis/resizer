@@ -1,4 +1,4 @@
-# ExpressionEngine Resizer 1.1.1
+# ExpressionEngine Resizer 2.0.0
 
 Use Resizer to to resize, cache, and retrieve images with a number of options.
 
@@ -13,6 +13,8 @@ $config['resizer_responsive'] = false;        // Skip the width and height param
 $config['resizer_xhtml'] = false;             // Self close image tag (false for HTML, true for XHTML)
 $config['resizer_sharpen'] = false;           // Slightly sharpen images by default, useful after resizing
 $config['resizer_target'] = '/images/sized/'; // Default cache directory relative to root (must be writable)
+$config['resizer_exclude_remote'] = false;    // Exclude remote domains from being downloaded and processed
+$config['resizer_local_domain'] = 'test.com'; // Override the local domain used when translating external paths
 ```
 
 ## Parameters
@@ -32,6 +34,8 @@ $config['resizer_target'] = '/images/sized/'; // Default cache directory relativ
 	sharpen='yes'           // Slightly sharpen jpg images, useful after resizing (defaults to yes)
 	target='/images/sized/' // Writeable cache directory relative to root (defaults to config value else '/images/sized/')
 	host='http://cdn.com'   // Domain to prefix to the filepath
+	exclude_remote='no'     // Exclude remote domains from being downloaded and processed
+	local_domain='test.com' // Local domain used when translating external paths
 	attr:class='img-left'   // Any attributes prepended by "attr:" will be added to the single tag output
 
 ## Usage
@@ -45,10 +49,16 @@ $config['resizer_target'] = '/images/sized/'; // Default cache directory relativ
 	{exp:resizer:pair src="/assets/img/hero.jpg" width="100" height="100" crop="yes"}
 	<img src="{resizer:path}" width="{resizer:width}" height="{resizer:height}" alt="Testing">
 	{/exp:resizer:pair}
+	<img src="/images/sized/hero-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" width="100" height="100" alt="Testing">
+	
+	{exp:resizer:bulk width="100" height="100" crop="yes" responsive="yes" attr:class="embedded"}
+	<img src="/assets/img/external.jpg" width="2000" height="2000" alt="Testing">
+	{/exp:resizer:bulk}
+	<img src="/images/sized/external-2d149bc0ba00de4f7e7ee20fd25404a1.jpg" alt="Testing" class="embedded">
 
 ## License
 
-Copyright 2014 Caddis Interactive, LLC
+Copyright 2015 Caddis Interactive, LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
