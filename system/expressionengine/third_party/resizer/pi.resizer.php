@@ -3,10 +3,10 @@
 /**
  * Resizer plugin
  *
- * @package    resizer
- * @author     Caddis <hello@caddis.co>
- * @link       https://github.com/caddis/resizer
- * @copyright  Copyright (c) 2015, Caddis Interactive, LLC
+ * @package resizer
+ * @author Caddis <hello@caddis.co>
+ * @link https://github.com/caddis/resizer
+ * @copyright Copyright (c) 2015, Caddis Interactive, LLC
  */
 
 $plugin_info = array(
@@ -66,12 +66,12 @@ class Resizer
 				ee()->config->item('resizer_quality') :
 				80;
 		}
-		
+
 		// Remote images
 		if ($this->settings['exclude_remote'] === false) {
 			$this->settings['exclude_remote'] = ee()->config->item('resizer_exclude_remote');
 		}
-		
+
 		// Local domain
 		if ($this->settings['local_domain'] === false) {
 			$this->settings['local_domain'] = ee()->config->item('resizer_local_domain');
@@ -213,7 +213,7 @@ class Resizer
 							$params[$key] = $value;
 						}
 					}
-					
+
 					$params = $this->set_attributes($params);
 
 					return $scope->build_tag($image, $params);
@@ -266,7 +266,7 @@ class Resizer
 
 				file_put_contents($path, $content);
 			} else {
-				$exists = false;	
+				$exists = false;
 			}
 		}
 
@@ -320,7 +320,7 @@ class Resizer
 		}
 
 		$target_ratio = $target_width / $target_height;
-		
+
 		// Return original if remote and remotes are excluded
 		if ($absolute && $params['exclude_remote']) {
 			return array(
@@ -553,7 +553,7 @@ class Resizer
 				$params[substr($key, 5)] = $value;
 			}
 		}
-		
+
 		return $params;
 	}
 
