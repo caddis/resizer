@@ -1,6 +1,6 @@
 # ExpressionEngine Resizer 2.0.0
 
-Use Resizer to to resize, cache, and retrieve images with a number of options.
+Use Resizer to resize, cache, and retrieve images with a number of options.
 
 ## Setup
 
