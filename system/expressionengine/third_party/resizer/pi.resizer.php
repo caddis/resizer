@@ -11,7 +11,7 @@
 
 $plugin_info = array(
 	'pi_name' => 'Resizer',
-	'pi_version' => '2.0.0',
+	'pi_version' => '2.1.0',
 	'pi_author' => 'Caddis',
 	'pi_author_url' => 'https://www.caddis.co',
 	'pi_description' => 'Resize, cache, and retrieve images',
@@ -20,7 +20,7 @@ $plugin_info = array(
 
 class Resizer
 {
-	public $defaults = array(
+	private $defaults = array(
 		'alt' => '',
 		'background' => false,
 		'crop' => false,
@@ -29,7 +29,7 @@ class Resizer
 		'filename' => false,
 		'force_jpg' => false,
 		'height' => false,
-		'host' => '',
+		'host' => false,
 		'local_domain' => false,
 		'quality' => false,
 		'responsive' => false,
@@ -56,15 +56,26 @@ class Resizer
 		$this->settings['target'] = $this->settings['root'] . $this->settings['target'];
 
 		// PHP memory limit
-		if (ee()->config->item('resizer_memory_limit') !== false) {
-			ini_set('memory_limit', ee()->config->item('resizer_memory_limit') . 'M');
+		$configMemoryLimit = ee()->config->item('resizer_memory_limit');
+
+		if ($configMemoryLimit !== false) {
+			ini_set('memory_limit', $configMemoryLimit . 'M');
 		}
 
 		// Image quality
 		if ($this->settings['quality'] === false) {
-			$this->settings['quality'] = (ee()->config->item('resizer_quality') !== false) ?
-				ee()->config->item('resizer_quality') :
+			$configQuality = ee()->config->item('resizer_quality');
+
+			$this->settings['quality'] = $configQuality !== false ?
+				$configQuality :
 				80;
+		}
+
+		// Host prefix
+		if ($this->settings['host'] === false) {
+			$configHost = ee()->config->item('resizer_host');
+
+			$this->settings['host'] = $configHost !== false ? $configHost : '';
 		}
 
 		// Remote images
@@ -94,9 +105,11 @@ class Resizer
 
 		// Target
 		if (ee()->TMPL->fetch_param('target') === false) {
+			$configTarget = ee()->config->item('resizer_target');
+
 			$this->settings['target'] = $this->settings['root'] . (
-				ee()->config->item('resizer_target') !== false ?
-					ee()->config->item('resizer_target') :
+				$configTarget !== false ?
+					$configTarget :
 					$this->defaults['target']
 			);
 		}
@@ -246,8 +259,8 @@ class Resizer
 		$exists = true;
 
 		// Replace absolute local path
-		$local_domain = $params['local_domain'] ?: $_SERVER['HTTP_HOST'];
-		$src = preg_replace('/^(https?:)?\/\/' . $local_domain . '/i', '', $src);
+		$localDomain = $params['local_domain'] ?: $_SERVER['HTTP_HOST'];
+		$src = preg_replace('/^(https?:)?\/\/' . $localDomain . '/i', '', $src);
 
 		// Check for absolute path
 		$absolute = preg_match('/^(https?:)?\/\//i', $src);
@@ -282,51 +295,49 @@ class Resizer
 			}
 		}
 
-		$path_parts = pathinfo($path);
-		$filename = $path_parts['filename'];
+		$pathParts = pathinfo($path);
+		$filename = $pathParts['filename'];
 
 		$data = getimagesize($path);
-		$orig_width = $data[0];
-		$orig_height = $data[1];
+		$origWidth = $data[0];
+		$origHeight = $data[1];
 
 		// Calculate target width and height
-		$orig_ratio = ($orig_width / $orig_height);
+		$origRatio = ($origWidth / $origHeight);
 
 		$width = $params['width'];
 		$height = $params['height'];
 
 		if (! $width && ! $height) {
-			$width = $target_width = $orig_width;
-			$height = $target_height = $orig_height;
+			$width = $targetWidth = $origWidth;
+			$height = $targetHeight = $origHeight;
 		} else {
 			if ($width && $height) {
-				$target_width = $width < $orig_width ?
+				$targetWidth = $width < $origWidth ?
 					$width :
-					(($params['scale_up'] === true) ? $width : $orig_width);
-				$target_height = $height < $orig_height ?
+					(($params['scale_up'] === true) ? $width : $origWidth);
+				$targetHeight = $height < $origHeight ?
 					$height :
-					(($params['scale_up'] === true) ? $height : $orig_height);
+					(($params['scale_up'] === true) ? $height : $origHeight);
 			} elseif ($width) {
-				$target_width = $width < $orig_width ?
+				$targetWidth = $width < $origWidth ?
 					$width :
-					(($params['scale_up'] === true) ? $width : $orig_width);
-				$target_height = floor($target_width / $orig_ratio);
+					(($params['scale_up'] === true) ? $width : $origWidth);
+				$targetHeight = floor($targetWidth / $origRatio);
 			} elseif ($height) {
-				$target_height = $height < $orig_height ?
+				$targetHeight = $height < $origHeight ?
 					$height :
-					(($params['scale_up'] === true) ? $height : $orig_height);
-				$target_width = floor($target_height * $orig_ratio);
+					(($params['scale_up'] === true) ? $height : $origHeight);
+				$targetWidth = floor($targetHeight * $origRatio);
 			}
 		}
-
-		$target_ratio = $target_width / $target_height;
 
 		// Return original if remote and remotes are excluded
 		if ($absolute && $params['exclude_remote']) {
 			return array(
 				'path' => $src,
-				'width' => $target_width,
-				'height' => $target_height
+				'width' => $targetWidth,
+				'height' => $targetHeight
 			);
 		}
 
@@ -347,7 +358,7 @@ class Resizer
 
 		// General filename
 		if ($params['filename']) {
-			$new_path = $target . $params['filename'] . $ext;
+			$newPath = $target . $params['filename'] . $ext;
 		} else {
 			unset($params['alt']);
 			unset($params['fallback']);
@@ -355,73 +366,73 @@ class Resizer
 
 			ksort($params);
 
-			$new_path = $target . $filename . '-' . md5(serialize(array_filter($params))) . $ext;
+			$newPath = $target . $filename . '-' . md5(serialize(array_filter($params))) . $ext;
 		}
 
 		$create = true;
 
 		// Determine if image generation is needed
-		if (file_exists($new_path)) {
+		if (file_exists($newPath)) {
 			$create = false;
 
-			$orig_time = date('YmdHis', filemtime($path));
-			$new_time = date('YmdHis', filemtime($new_path));
+			$origTime = date('YmdHis', filemtime($path));
+			$newTime = date('YmdHis', filemtime($newPath));
 
-			if ($new_time < $orig_time) {
+			if ($newTime < $origTime) {
 				$create = true;
 			}
 		}
 
 		// Create image if required
 		if ($create) {
-			$tmp_image = false;
+			$tmpImage = false;
 
 			if ($type == 1) {
-				$tmp_image = imagecreatefromgif($path);
+				$tmpImage = imagecreatefromgif($path);
 			} elseif ($type == 2) {
-				$tmp_image = imagecreatefromjpeg($path);
+				$tmpImage = imagecreatefromjpeg($path);
 			} elseif ($type == 3) {
-				$tmp_image = imagecreatefrompng($path);
+				$tmpImage = imagecreatefrompng($path);
 			}
 
-			$orig_x = $orig_y = $target_x = $target_y = 0;
+			$origX = $origY = $targetX = $targetY = 0;
 
-			if ($tmp_image) {
-				$new = imagecreatetruecolor($target_width, $target_height);
+			if ($tmpImage) {
+				$new = imagecreatetruecolor($targetWidth, $targetHeight);
 
-				$orig_ratio = $orig_width / $orig_height;
-				$target_ratio = $target_width / $target_height;
+				$origRatio = $origWidth / $origHeight;
+				$targetRatio = $targetWidth / $targetHeight;
 
 				if ($params['crop'] === true && $width !== false && $height !== false) {
-					if ($orig_ratio > $target_ratio) {
-						$temp_width = $orig_height * $target_ratio;
-						$temp_height = $orig_height;
+					if ($origRatio > $targetRatio) {
+						$tempWidth = $origHeight * $targetRatio;
+						$tempHeight = $origHeight;
 
-						$orig_x = ($orig_width - $temp_width) / 2;
+						$origX = ($origWidth - $tempWidth) / 2;
 					} else {
-						$temp_width = $orig_width;
-						$temp_height = $orig_width / $target_ratio;
+						$tempWidth = $origWidth;
+						$tempHeight = $origWidth / $targetRatio;
 
-						$orig_y = ($orig_height - $temp_height) / 2;
+						$origY = ($origHeight - $tempHeight) / 2;
 					}
 
-					$orig_width = $temp_width;
-					$orig_height = $temp_height;
+					$origWidth = $tempWidth;
+					$origHeight = $tempHeight;
 				} else {
-					if ($orig_ratio < $target_ratio) {
-						$temp_width = $target_height * $orig_ratio;
-						$temp_height = $target_height;
+					if ($origRatio < $targetRatio) {
+						$tempWidth = $targetHeight * $origRatio;
+						$tempHeight = $targetHeight;
 
-						$target_x = ($target_width - $temp_width) / 2;
+						$targetX = ($targetWidth - $tempWidth) / 2;
 					} else {
-						$temp_width = $target_width;
-						$temp_height = $target_width / $orig_ratio;
+						$tempWidth = $targetWidth;
+						$tempHeight = $targetWidth / $origRatio;
 
-						$target_y = ($target_height - $temp_height) / 2;
+						$targetY = ($targetHeight - $tempHeight) / 2;
 					}
 
-					$target_width = $temp_width;
-					$target_height = $temp_height;
+					$targetWidth = $tempWidth;
+					$targetHeight = $tempHeight;
 				}
 
 				if ($type == 2) {
@@ -454,7 +465,7 @@ class Resizer
 					}
 				}
 
-				imagecopyresampled($new, $tmp_image, $target_x, $target_y, $orig_x, $orig_y, $target_width, $target_height, $orig_width, $orig_height);
+				imagecopyresampled($new, $tmpImage, $targetX, $targetY, $origX, $origY, $targetWidth, $targetHeight, $origWidth, $origHeight);
 
 				// Sharpen image
 				if ($type == 2 || $params['force_jpg'] === true) {
@@ -470,18 +481,18 @@ class Resizer
 						imageconvolution($new, $sharpen, $divisor, 0);
 					}
 
-					imagejpeg($new, $new_path, $params['quality']);
+					imagejpeg($new, $newPath, $params['quality']);
 				} else {
 					if ($type == 1) {
-						imagegif($new, $new_path);
+						imagegif($new, $newPath);
 					} else {
-						imagepng($new, $new_path, 9);
+						imagepng($new, $newPath, 9);
 					}
 				}
 
 				// Remove temporary images
 				imagedestroy($new);
-				imagedestroy($tmp_image);
+				imagedestroy($tmpImage);
 			} else {
 				return false;
 			}
@@ -492,12 +503,12 @@ class Resizer
 		}
 
 		// Return relative path
-		$image = str_replace($params['root'], '', $new_path);
+		$image = str_replace($params['root'], '', $newPath);
 
 		return array(
 			'path' => $image,
-			'width' => $target_width,
-			'height' => $target_height
+			'width' => $targetWidth,
+			'height' => $targetHeight
 		);
 	}
 
