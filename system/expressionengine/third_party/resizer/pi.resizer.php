@@ -1,5 +1,7 @@
 <?php if (! defined('BASEPATH')) exit('No direct script access allowed');
 
+include_once(PATH_THIRD . 'resizer/addon.setup.php');
+
 /**
  * Resizer plugin
  *
@@ -10,11 +12,11 @@
  */
 
 $plugin_info = array(
-	'pi_name' => 'Resizer',
-	'pi_version' => '2.1.0',
-	'pi_author' => 'Caddis',
-	'pi_author_url' => 'https://www.caddis.co',
-	'pi_description' => 'Resize, cache, and retrieve images',
+	'pi_author' => RESIZER_AUTHOR,
+	'pi_author_url' => RESIZER_AUTHOR_URL,
+	'pi_name' => RESIZER_NAME,
+	'pi_version' => RESIZER_VER,
+	'pi_description' => RESIZER_DESC,
 	'pi_usage' => Resizer::usage()
 );
 

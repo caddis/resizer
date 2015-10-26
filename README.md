@@ -1,4 +1,4 @@
-# ExpressionEngine Resizer 2.1.0
+# ExpressionEngine Resizer 2.2.0
 
 Use Resizer to resize, cache, and retrieve images with a number of options.
 
