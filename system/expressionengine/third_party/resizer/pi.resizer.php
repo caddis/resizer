@@ -499,7 +499,7 @@ class Resizer
 				return false;
 			}
 
-			if ($absolute) {
+			if ($absolute AND file_exists($path)) {
 				unlink($path);
 			}
 		}
